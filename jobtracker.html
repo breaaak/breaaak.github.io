@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>秋招管理</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f9f9fb;
+      color: #333;
+      margin: 0;
+      padding: 10px;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    /* 紧凑添加表单 */
+    .add-form {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 10px;
+      background: #f0f5ff;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .add-form label {
+      font-weight: 500;
+      width: 50px;
+      text-align: right;
+    }
+    .add-form input {
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+      width: 120px;
+    }
+    button.add {
+      background-color: #27ae60;
+      color: white;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    /* 操作按钮区 */
+    .action-buttons {
+      text-align: right;
+      margin-bottom: 10px;
+    }
+    button.export {
+      background-color: #6f42c1;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-left: 8px;
+    }
+    button.export:nth-child(1) {
+      background-color: #2c3e50;
+    }
+
+    /* 表格样式 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+      /* 固定列宽 */
+      width: {{width}};
+    }
+    th {
+      background-color: #f2f2f2;
+      color: #2c3e50;
+      font-weight: 500;
+      position: relative;
+      cursor: pointer;
+    }
+    .sort-btn {
+      font-size: 12px;
+      background: none;
+      border: none;
+      color: #888;
+      opacity: 0.5;
+      transition: opacity 0.2s, color 0.2s;
+    }
+    .sort-btn:hover {
+      opacity: 1;
+      color: #333;
+    }
+
+    /* 固定列宽，溢出内容横向滚动 */
+    td {
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: clip;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    /* 内容可横向滚动 */
+    td:hover {
+      overflow: auto;
+      white-space: nowrap;
+      background-color: #f8f9fd;
+    }
+
+    /* 强制固定列宽 */
+    #tableBody td:nth-child(1) { width: 18%; }
+    #tableBody td:nth-child(2) { width: 15%; }
+    #tableBody td:nth-child(3) { width: 12%; }
+    #tableBody td:nth-child(4) { width: 10%; }
+    #tableBody td:nth-child(5) { width: 12%; }
+    #tableBody td:nth-child(6) { width: 12%; }
+    #tableBody td:nth-child(7) { width: 8%; }
+
+    /* 删除按钮在固定区域内 */
+    .delete-wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+      justify-content: center;
+    }
+    .delete-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    /* 悬停时按钮出现，但不改变布局 */
+    .delete-btn {
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .delete-wrapper:hover .delete-btn {
+      opacity: 1;
+    }
+
+    select.inline {
+      width: 100%;
+      padding: 2px;
+      font-size: 13px;
+      border: 1px solid #999;
+      border-radius: 3px;
+    }
+    .date-edit {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+    }
+    .date-edit select {
+      width: 45%;
+      padding: 2px;
+      font-size: 12px;
+    }
+    .priority-s { background-color: #ffebee; color: #c62828; font-weight: bold; }
+    .priority-a { background-color: #fff8e1; color: #f57f17; font-weight: bold; }
+    .priority-b { background-color: #e3f2fd; color: #1565c0; font-weight: bold; }
+    .priority-c { background-color: #eeeeee; color: #424242; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💼 秋招进度管理</h1>
+
+    <!-- 添加表单 -->
+    <div class="add-form">
+      <label>公司</label>
+      <input type="text" id="company" placeholder="腾讯" />
+
+      <label>岗位</label>
+      <input type="text" id="position" placeholder="前端开发" />
+
+      <button class="add" onclick="addItem()">添加</button>
+    </div>
+
+    <!-- 导出 & 导入 按钮 -->
+    <div class="action-buttons">
+      <button class="export" onclick="exportToJson()">导出为 JSON</button>
+      <button class="export" style="background-color: #2c3e50;" onclick="document.getElementById('importInput').click()">导入 JSON</button>
+      <input type="file"
+             id="importInput"
+             accept=".json"
+             style="display: none;"
+             onchange="importFromJson(event)" />
+    </div>
+
+    <!-- 数据表格 -->
+    <table id="jobTable">
+      <thead>
+        <tr>
+          <th style="width:18%">公司<button class="sort-btn" onclick="sortByCompany()">🔽</button></th>
+          <th style="width:15%">岗位</th>
+          <th style="width:12%">进度<button class="sort-btn" onclick="sortByStatus()">🔽</button></th>
+          <th style="width:10%">面试日<button class="sort-btn" onclick="sortByDate()">🔽</button></th>
+          <th style="width:12%">薪资</th>
+          <th style="width:12%">Base地</th>
+          <th style="width:8%">优先级<button class="sort-btn" onclick="sortByPriority()">🔽</button></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'jobApplications';
+
+    // 面试进度顺序
+    const STATUS_ORDER = {
+      '简历': 0,
+      '笔试': 1,
+      '一面': 2,
+      '二面': 3,
+      '三面': 4,
+      '四面': 5,
+      '五面': 6,
+      'HR面': 7,
+      'OC': 8,
+      '谈薪': 9,
+      '拒绝': 99,
+      '接受': 10
+    };
+
+    // 页面加载
+    document.addEventListener('DOMContentLoaded', renderTable);
+
+    function getData() {
+      const data = localStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    }
+
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function generateKey(company, position) {
+      return `${company.trim()}__${position.trim()}`;
+    }
+
+    // 添加新条目
+    function addItem() {
+      const company = id('company').value.trim();
+      const position = id('position').value.trim();
+      if (!company || !position) {
+        alert('请填写公司和岗位！');
+        return;
+      }
+
+      const key = generateKey(company, position);
+      const data = getData();
+      if (data.some(item => item.key === key)) {
+        alert('该 公司+岗位 已存在！');
+        return;
+      }
+
+      const newItem = {
+        key,
+        company,
+        position,
+        status: '简历',
+        interviewDate: '',
+        salary: '',
+        base: '',
+        priority: 'B'
+      };
+
+      data.unshift(newItem);
+      saveData(data);
+      resetForm();
+      renderTable();
+    }
+
+    function resetForm() {
+      id('company').value = '';
+      id('position').value = '';
+    }
+
+    // 创建可编辑文本单元格
+    function createEditableTextCell(text, onSave) {
+      const td = document.createElement('td');
+      td.textContent = text || '';
+      td.title = '双击可编辑';
+
+      td.ondblclick = function () {
+        if (td.querySelector('input')) return;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = td.textContent;
+        input.style.width = '100%';
+        input.style.padding = '2px';
+        input.style.fontSize = '13px';
+
+        td.textContent = '';
+        td.appendChild(input);
+        input.focus();
+
+        const finish = () => {
+          const value = input.value.trim();
+          td.textContent = value;
+          onSave(value);
+        };
+
+        input.onblur = finish;
+        input.onkeydown = e => {
+          if (e.key === 'Enter') input.blur();
+          if (e.key === 'Escape') {
+            td.textContent = text;
+            finish();
+          }
+        };
+      };
+
+      return td;
+    }
+
+    // 创建下拉选择单元格
+    function createEditableSelectCell(currentValue, options, onSave) {
+      const td = document.createElement('td');
+      td.textContent = currentValue || '';
+      td.title = '双击可编辑';
+
+      td.ondblclick = function () {
+        if (td.querySelector('select')) return;
+        const select = document.createElement('select');
+        select.className = 'inline';
+        options.forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt;
+          option.textContent = opt;
+          if (opt === currentValue) option.selected = true;
+          select.appendChild(option);
+        });
+
+        td.textContent = '';
+        td.appendChild(select);
+        select.focus();
+
+        select.onblur = () => {
+          const value = select.value;
+          td.textContent = value;
+          onSave(value);
+        };
+        select.onchange = () => select.blur();
+      };
+
+      return td;
+    }
+
+    // 渲染表格
+    function renderTable() {
+      const tbody = id('tableBody');
+      tbody.innerHTML = '';
+      const data = getData();
+
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+
+        // 公司 + 删除按钮（略）
+        const tdCompany = document.createElement('td');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'delete-wrapper';
+        wrapper.textContent = item.company || '';
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '×';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.title = '删除';
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteItem(item.key);
+        };
+        wrapper.appendChild(deleteBtn);
+        tdCompany.appendChild(wrapper);
+        tdCompany.title = '双击可编辑';
+
+        tdCompany.ondblclick = function () {
+          if (tdCompany.querySelector('input')) return;
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = item.company;
+          input.style.width = '100%';
+          input.style.padding = '2px';
+          input.style.fontSize = '13px';
+
+          const wrapper = tdCompany.querySelector('.delete-wrapper');
+          const deleteBtn = wrapper.querySelector('.delete-btn');
+          wrapper.removeChild(deleteBtn);
+          wrapper.textContent = '';
+          wrapper.appendChild(input);
+          wrapper.appendChild(deleteBtn);
+          deleteBtn.style.opacity = '0';
+          input.focus();
+
+          const finish = () => {
+            const value = input.value.trim();
+            wrapper.textContent = value || '';
+            wrapper.appendChild(deleteBtn);
+            deleteBtn.style.opacity = '';
+            updateField(item.key, 'company', value);
+          };
+
+          input.onblur = finish;
+          input.onkeydown = e => {
+            if (e.key === 'Enter') input.blur();
+            if (e.key === 'Escape') {
+              wrapper.textContent = item.company;
+              wrapper.appendChild(deleteBtn);
+            }
+          };
+        };
+
+        // 岗位（略）
+        const tdPosition = createEditableTextCell(
+          item.position,
+          value => updateField(item.key, 'position', value)
+        );
+
+        // 进度（略）
+        const tdStatus = createEditableSelectCell(
+          item.status,
+          Object.keys(STATUS_ORDER).filter(s => !['拒绝', '接受'].includes(s)),
+          value => updateField(item.key, 'status', value)
+        );
+
+        // ✅ 修复版：面试日（月+日双下拉，可连续选择）
+        const tdDate = document.createElement('td');
+        tdDate.textContent = item.interviewDate || '未定';
+        tdDate.title = '双击选择日期';
+
+        tdDate.ondblclick = function () {
+          if (tdDate.querySelector('.date-edit') || tdDate.dataset.editing === 'true') return;
+
+          const parts = item.interviewDate ? item.interviewDate.split('/') : [];
+          const month = parts[0] || '';
+          const day = parts[1] || '';
+
+          const container = document.createElement('div');
+          container.className = 'date-edit';
+          container.dataset.editing = 'true';
+          tdDate.dataset.editing = 'true';
+
+          container.innerHTML = `
+            <select class="month-select">
+              <option value="">月</option>
+              ${Array.from({length: 12}, (_, i) => {
+                const mm = (i + 1).toString().padStart(2, '0');
+                return `<option value="${mm}" ${mm === month ? 'selected' : ''}>${i + 1}月</option>`;
+              }).join('')}
+            </select>
+            <select class="day-select">
+              <option value="">日</option>
+              ${Array.from({length: 31}, (_, i) => {
+                const dd = (i + 1).toString().padStart(2, '0');
+                return `<option value="${dd}" ${dd === day ? 'selected' : ''}>${i + 1}日</option>`;
+              }).join('')}
+            </select>
+          `;
+
+          const selectMonth = container.querySelector('.month-select');
+          const selectDay = container.querySelector('.day-select');
+
+          // ✅ 保存函数
+          const updateDate = () => {
+            const m = selectMonth.value;
+            const d = selectDay.value;
+            if (m && d) {
+              const dateStr = `${m}/${d}`;
+              tdDate.textContent = dateStr;
+              updateField(item.key, 'interviewDate', dateStr);
+            } else {
+              tdDate.textContent = '未定';
+            }
+            // 清理状态
+            delete tdDate.dataset.editing;
+            if (container.parentNode) container.replaceWith(document.createTextNode(''));
+          };
+
+          // ✅ 延迟 blur 判断，防止快速切换下拉丢失
+          selectMonth.onchange = () => selectDay.focus();
+          selectDay.onchange = () => {}; // 不立即保存
+
+          // ✅ 只有整个 container 失去焦点时才保存
+          container.addEventListener('focusout', (e) => {
+            // 延迟检查，确保焦点是否真的离开
+            setTimeout(() => {
+              if (!container.contains(document.activeElement)) {
+                updateDate();
+              }
+            }, 10);
+          });
+
+          // 插入并聚焦
+          tdDate.textContent = '';
+          tdDate.appendChild(container);
+          selectMonth.focus();
+        };
+
+        // 薪资（略）
+        const tdSalary = createEditableTextCell(
+          item.salary,
+          value => updateField(item.key, 'salary', value)
+        );
+
+        // Base地（略）
+        const tdBase = createEditableTextCell(
+          item.base,
+          value => updateField(item.key, 'base', value)
+        );
+
+        // 优先级（略）
+        const tdPriority = createEditableSelectCell(
+          item.priority,
+          ['S', 'A', 'B', 'C'],
+          value => {
+            updateField(item.key, 'priority', value);
+            applyPriorityStyle(tr, value);
+          }
+        );
+        applyPriorityStyle(tr, item.priority);
+
+        tr.append(tdCompany, tdPosition, tdStatus, tdDate, tdSalary, tdBase, tdPriority);
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 更新字段
+    function updateField(key, field, value) {
+      const data = getData();
+      const index = data.findIndex(item => item.key === key);
+      if (index === -1) return;
+
+      const oldItem = data[index];
+      const newItem = { ...oldItem, [field]: value };
+
+      if (field === 'company' || field === 'position') {
+        const newKey = generateKey(newItem.company, newItem.position);
+        if (newKey !== key) {
+          if (data.some((item, i) => i !== index && item.key === newKey)) {
+            alert('该 公司+岗位 组合已存在！');
+            renderTable();
+            return;
+          }
+          newItem.key = newKey;
+        }
+      }
+
+      data[index] = newItem;
+      saveData(data);
+      renderTable();
+    }
+
+    // 删除条目
+    function deleteItem(key) {
+      if (confirm('确定删除这条记录？')) {
+        const data = getData().filter(item => item.key !== key);
+        saveData(data);
+        renderTable();
+      }
+    }
+
+    // 应用优先级背景色
+    function applyPriorityStyle(tr, priority) {
+      tr.className = '';
+      if (priority === 'S') tr.classList.add('priority-s');
+      else if (priority === 'A') tr.classList.add('priority-a');
+      else if (priority === 'B') tr.classList.add('priority-b');
+      else if (priority === 'C') tr.classList.add('priority-c');
+    }
+
+    // 排序函数
+    function sortByCompany() {
+      const data = getData().sort((a, b) => a.company.localeCompare(b.company));
+      saveData(data);
+      renderTable();
+    }
+
+    function sortByStatus() {
+      const data = getData().sort((a, b) => {
+        const sa = STATUS_ORDER[a.status] !== undefined ? STATUS_ORDER[a.status] : 99;
+        const sb = STATUS_ORDER[b.status] !== undefined ? STATUS_ORDER[b.status] : 99;
+        return sa - sb;
+      });
+      saveData(data);
+      renderTable();
+    }
+
+    function sortByDate() {
+      const parseDate = (dateStr) => {
+        if (!dateStr || dateStr === '未定') return 999999;
+        const [mm, dd] = dateStr.split('/').map(Number);
+        return mm * 100 + dd;
+      };
+      const data = getData().sort((a, b) => parseDate(a.interviewDate) - parseDate(b.interviewDate));
+      saveData(data);
+      renderTable();
+    }
+
+    function sortByPriority() {
+      const order = { 'S': 0, 'A': 1, 'B': 2, 'C': 3 };
+      const data = getData().sort((a, b) => order[a.priority] - order[b.priority]);
+      saveData(data);
+      renderTable();
+    }
+
+    // ✅ 导出为 JSON 文件
+    function exportToJson() {
+      const data = getData();
+      const filename = 'job-applications.json';
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ✅ 导入 JSON 文件
+    function importFromJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+
+          if (!Array.isArray(imported)) {
+            alert('导入的 JSON 格式不正确：应为数组');
+            return;
+          }
+
+          const currentData = getData();
+          const updatedData = [...currentData];
+          let addCount = 0;
+          let updateCount = 0;
+
+          imported.forEach(item => {
+            if (!item.company || !item.position) return;
+
+            const key = generateKey(item.company, item.position);
+            const existingIndex = updatedData.findIndex(i => i.key === key);
+
+            const newItem = {
+              key,
+              company: item.company,
+              position: item.position,
+              status: item.status || '简历',
+              interviewDate: item.interviewDate || '',
+              salary: item.salary || '',
+              base: item.base || '',
+              priority: item.priority || 'B'
+            };
+
+            if (existingIndex > -1) {
+              updatedData[existingIndex] = newItem;
+              updateCount++;
+            } else {
+              updatedData.push(newItem);
+              addCount++;
+            }
+          });
+
+          saveData(updatedData);
+          renderTable();
+          alert(`导入完成！\n新增 ${addCount} 条，覆盖 ${updateCount} 条`);
+
+        } catch (err) {
+          alert('解析 JSON 文件失败，请检查文件格式是否正确。');
+          console.error(err);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // 允许重复导入
+    }
+
+    // 工具函数
+    function id(x) { return document.getElementById(x); }
+  </script>
+</body>
+</html>
